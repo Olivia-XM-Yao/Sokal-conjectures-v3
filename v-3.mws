@@ -1,0 +1,80 @@
+{VERSION 6 0 "IBM INTEL NT" "6.0" }
+{USTYLETAB {CSTYLE "Maple Input" -1 0 "Courier" 0 1 255 0 0 1 0 1 0 0 
+1 0 0 0 0 1 }{PSTYLE "Normal" -1 0 1 {CSTYLE "" -1 -1 "" 0 1 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 }0 0 0 -1 -1 -1 0 0 0 0 0 0 -1 0 }{PSTYLE "Text Ou
+tput" -1 2 1 {CSTYLE "" -1 -1 "Courier" 1 10 0 0 255 1 0 0 0 0 0 1 3 
+0 3 0 }1 0 0 -1 -1 -1 0 0 0 0 0 0 -1 0 }{PSTYLE "" 2 6 1 {CSTYLE "" 
+-1 -1 "" 0 1 0 0 0 0 0 0 0 0 0 0 2 0 0 0 }0 0 0 -1 -1 -1 0 0 0 0 0 0 
+-1 0 }}
+{SECT 0 {EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 4075 "VerifyCriticalPoin
+t := proc()\n    local DerivativeInterval, midpoint, radius, q0, w0, e
+ps, Q, W,\n          Q0, W0, f0, J0, JX, a, b, c, d, determinant, Y, i
+, j,\n          diagonal, rowBound, imageBound, rowUpper, imageUpper,
+\n          rowLimit, imageLimit;\n\n    # Enclose partial_w^iw partia
+l_q^iq Psi on a positive rectangle.\n    DerivativeInterval := proc(qR
+ange, wRange, iw, iq)\n        local k, e, coefficient, term1, term2, \+
+lower, upper,\n              firstOmitted, firstExponent, tail;\n     \+
+   lower, upper := 0, 0;\n        for k from 0 to 12 do\n            e
+ := k*(k-1)/2;\n            if k >= iw and e >= iq then\n             \+
+   coefficient := (-1)^k*binomial(k, iw)*factorial(iw)\n              \+
+                       *binomial(e, iq)*factorial(iq);\n              \+
+  term1 := coefficient*wRange[1]^(k-iw)*qRange[1]^(e-iq);\n           \+
+     term2 := coefficient*wRange[2]^(k-iw)*qRange[2]^(e-iq);\n        \+
+        lower := lower + min(term1, term2);\n                upper := \+
+upper + max(term1, term2);\n            end if;\n        end do;\n\n  \+
+      # For 1/4 < q < 1/3 and 1 < w < 3, bound each omitted\n        #
+ term by k^iw*e^iq*4^iq*3^(k-e).\n        firstOmitted := 13;\n       \+
+ firstExponent := firstOmitted*(firstOmitted-1)/2;\n        if 2^(iw+2
+*iq+1) >= 3^(firstOmitted-1) then\n            error \"the geometric t
+ail ratio is not below 1/2\";\n        end if;\n        tail := 2*firs
+tOmitted^iw*firstExponent^iq*4^iq\n                 / 3^(firstExponent
+-firstOmitted);\n        return [lower-tail, upper+tail];\n    end pro
+c;\n\n    midpoint := B -> (B[1]+B[2])/2;\n    radius := B -> (B[2]-B[
+1])/2;\n\n    q0 := 3092493386004/10^13;\n    w0 := 2320376944290/10^1
+2;\n    eps := 1/10^12;\n    Q := [q0-eps, q0+eps];\n    W := [w0-eps,
+ w0+eps];\n    if Q[1] <= 309/1000 or Q[2] >= 1237/4000 or\n       W[1
+] <= 2 or W[2] >= 233/100 then\n        error \"the box lies outside t
+he stated bounds\";\n    end if;\n\n    Q0, W0 := [q0, q0], [w0, w0];
+\n    f0 := [DerivativeInterval(Q0, W0, 0, 0),\n           DerivativeI
+nterval(Q0, W0, 1, 0)];\n    J0 := [[DerivativeInterval(Q0, W0, 0, 1),
+ f0[2]],\n           [DerivativeInterval(Q0, W0, 1, 1),\n            D
+erivativeInterval(Q0, W0, 2, 0)]];\n    JX := [[DerivativeInterval(Q, \+
+W, 0, 1), DerivativeInterval(Q, W, 1, 0)],\n           [DerivativeInte
+rval(Q, W, 1, 1), DerivativeInterval(Q, W, 2, 0)]];\n\n    a, b := mid
+point(J0[1][1]), midpoint(J0[1][2]);\n    c, d := midpoint(J0[2][1]), \+
+midpoint(J0[2][2]);\n    determinant := a*d-b*c;\n    if determinant =
+ 0 then\n        error \"the midpoint matrix is singular\";\n    end i
+f;\n    Y := [[d/determinant, -b/determinant],\n          [-c/determin
+ant, a/determinant]];\n\n    rowLimit := [234/10^13, 301/10^12];\n    \+
+imageLimit := [323/10^15, 397/10^15];\n    printf(\"Coordinate order (
+q,w)\\n\");\n    for i from 1 to 2 do\n        rowBound := 0;\n       \+
+ for j from 1 to 2 do\n            diagonal := 0;\n            if i = \+
+j then\n                diagonal := 1;\n            end if;\n         \+
+   rowBound := rowBound\n                + abs(diagonal - Y[i][1]*midp
+oint(JX[1][j])\n                               - Y[i][2]*midpoint(JX[2
+][j]))\n                + abs(Y[i][1])*radius(JX[1][j])\n             \+
+   + abs(Y[i][2])*radius(JX[2][j]);\n        end do;\n        imageBou
+nd := eps*rowBound\n            + abs(Y[i][1]*midpoint(f0[1])+Y[i][2]*
+midpoint(f0[2]))\n            + abs(Y[i][1])*radius(f0[1]) + abs(Y[i][
+2])*radius(f0[2]);\n\n        # Round the displayed upper bounds upwar
+d with exact arithmetic.\n        rowUpper := ceil(10^18*rowBound);\n \+
+       imageUpper := ceil(10^18*imageBound);\n        if rowUpper/10^1
+8 >= rowLimit[i] or\n           imageUpper/10^18 >= imageLimit[i] then
+\n            error \"a printed bound fails for coordinate %1\", i;\n \+
+       end if;\n        printf(\"Row %d sum <= 0.%018d   PASS\\n\", i,
+ rowUpper);\n        printf(\"Coordinate %d image distance <= 0.%018d \+
+  PASS\\n\",\n               i, imageUpper);\n    end do;\n\n    print
+f(\"Box inclusion and contraction verified.\\n\");\n    printf(\"|rho \+
+- 0.3092493386004| < 10^(-12)\\n\");\n    printf(\"|tau - 2.3203769442
+90| < 10^(-12)\\n\");\nend proc:\n\nVerifyCriticalPoint():" }}{PARA 6 
+"" 1 "" {TEXT -1 22 "Coordinate order (q,w)" }}{PARA 6 "" 1 "" {TEXT 
+-1 40 "Row 1 sum <= 0.000000000023328356   PASS" }}{PARA 6 "" 1 "" 
+{TEXT -1 58 "Coordinate 1 image distance <= 0.000000000000322520   PAS
+S" }}{PARA 6 "" 1 "" {TEXT -1 40 "Row 2 sum <= 0.000000000300089405   \+
+PASS" }}{PARA 6 "" 1 "" {TEXT -1 58 "Coordinate 2 image distance <= 0.
+000000000000396910   PASS" }}{PARA 6 "" 1 "" {TEXT -1 39 "Box inclusio
+n and contraction verified." }}{PARA 6 "" 1 "" {TEXT -1 34 "|rho - 0.3
+092493386004| < 10^(-12)" }}{PARA 6 "" 1 "" {TEXT -1 33 "|tau - 2.3203
+76944290| < 10^(-12)" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 0 "" }}
+}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 0 "" }}}}{MARK "0 0 0" 4041 }
+{VIEWOPTS 1 1 0 1 1 1803 1 1 1 1 }{PAGENUMBERS 0 1 2 33 1 1 }
